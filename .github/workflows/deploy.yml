@@ -1,8 +1,8 @@
-name: Deploy BYJU'S React App to Azure VM
+name: Deploy BYJU’S React App to Azure VM
 
 on:
   push:
-    branches: 
+    branches:
       - master
 
 jobs:
@@ -11,45 +11,44 @@ jobs:
 
     steps:
 
-    # Step 1 — Checkout repository
-    - name: Checkout Code
-      uses: actions/checkout@v3
-      
-    # Step 2 — Install Node
-    - name: Install Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18
+      # Step 1 — Checkout
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    # Step 3 — Install dependencies
-    - name: Install dependencies
-      run: |
-        cd ${{ secrets.SOURCE_FOLDER }}
-        npm install
+      # Step 2 — Install Node.js
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-    # Step 4 — Build React app
-    - name: Build project
-      run: |
-        cd ${{ secrets.SOURCE_FOLDER }}
-        npm run build
+      # Step 3 — Install dependencies
+      - name: Install dependencies
+        run: |
+          npm install
 
-    # Step 5 — Upload build folder to Azure VM
-    - name: Upload build to Azure VM
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_HOST_SECRET }}
-        source: "${{ secrets.SOURCE_FOLDER }}/build/*"
-        target: "/var/www/byjus/"
+      # Step 4 — Build the React app
+      - name: Build project
+        run: |
+          npm run build
 
-    # Step 6 — Restart Nginx on Azure VM
-    - name: Restart Nginx on Azure VM
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_HOST_SECRET }}
-        script: |
-          sudo systemctl restart nginx
-          echo "Deployment successful!"
+      # Step 5 — Upload Build folder to Azure VM
+      - name: Upload build to Azure VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_HOST_SECRET }}
+          source: "./build/**"
+          target: "/var/www/byjus/"
+          strip_components: 1
+
+      # Step 6 — Restart Nginx
+      - name: Restart Nginx on Azure VM
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_HOST_SECRET }}
+          script: |
+            sudo systemctl restart nginx
+            echo "Deployment successful!"
