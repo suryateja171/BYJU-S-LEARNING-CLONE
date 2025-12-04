@@ -1,0 +1,51 @@
+name: Deploy BYJUS React App to Azure VM
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1️⃣ Checkout code
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # 2️⃣ Setup Node
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    # 3️⃣ Install dependencies
+    - name: Install npm dependencies
+      run: npm install
+
+    # 4️⃣ Build React app
+    - name: Build React App
+      run: npm run build
+
+    # 5️⃣ Copy build folder to Azure VM
+    - name: Upload build to Azure VM
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+        source: "build/*"
+        target: "/var/www/byjus/"
+
+    # 6️⃣ Restart NGINX in Azure VM
+    - name: Restart NGINX on Azure Server
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+        script: |
+          sudo systemctl restart nginx
+          echo "Deployment Completed Successfully!"
+
