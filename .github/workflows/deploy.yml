@@ -1,33 +1,55 @@
-name: Deploy BYJUS Clone to Azure VM
+name: Deploy BYJU'S React App to Azure VM
 
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - master
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
 
-    - name: Upload files to Azure VM
+    # Step 1 — Checkout repository
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    # Step 2 — Install Node
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    # Step 3 — Install dependencies
+    - name: Install dependencies
+      run: |
+        cd ${{ secrets.SOURCE_FOLDER }}
+        npm install
+
+    # Step 4 — Build React app
+    - name: Build project
+      run: |
+        cd ${{ secrets.SOURCE_FOLDER }}
+        npm run build
+
+    # Step 5 — Upload build folder to Azure VM
+    - name: Upload build to Azure VM
       uses: appleboy/scp-action@v0.1.4
       with:
         host: ${{ secrets.VM_HOST }}
         username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-        source: "./*"
-        target: "/var/www/byjus"
-        overwrite: true
+        key: ${{ secrets.VM_HOST_SECRET }}
+        source: "${{ secrets.SOURCE_FOLDER }}/build/*"
+        target: "/var/www/byjus/"
 
-    - name: Restart Nginx
+    # Step 6 — Restart Nginx on Azure VM
+    - name: Restart Nginx on Azure VM
       uses: appleboy/ssh-action@v0.1.7
       with:
         host: ${{ secrets.VM_HOST }}
         username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+        key: ${{ secrets.VM_HOST_SECRET }}
         script: |
           sudo systemctl restart nginx
-          echo "Deployment complete!"
+          echo "Deployment successful!"
